@@ -67,23 +67,36 @@ Each backend module follows **routes → validator → controller → service �
 
 ### Prerequisites
 
-- Node.js 18 or newer
-- MongoDB (local install, or a MongoDB Atlas connection string)
+- **Node.js 20.19+ or 22.12+** (required by Vite 8 and Mongoose 9). Check with `node -v`.
+- **MongoDB**: either a local install that is running (default `mongodb://127.0.0.1:27017`), or a free MongoDB Atlas cluster.
+- Git
 
 ### Installation
 
 ```bash
-git clone <your-repo-url> task-management
-cd task-management
+git clone https://github.com/mahesh-pawar/mern-task-management.git
+cd mern-task-management
 cd server && npm install
 cd ../client && npm install
+cd ..
 ```
 
 ### Environment Variables
 
+Create `server/.env` from the example:
+
 ```bash
+# macOS / Linux / Git Bash
 cp server/.env.example server/.env
+
+# Windows (Command Prompt)
+copy server\.env.example server\.env
 ```
+
+Then open `server/.env` and set at least:
+
+- `JWT_SECRET`: replace the placeholder with a random string (command below).
+- `MONGODB_URI`: keep the default for a local MongoDB, or paste your Atlas connection string.
 
 | Variable         | Description                                         | Example                                   |
 |------------------|-----------------------------------------------------|-------------------------------------------|
@@ -111,7 +124,9 @@ cd client
 npm run dev
 ```
 
-Open http://localhost:5173. Vite proxies `/api` to the server, so the browser only ever talks to one origin.
+Open http://localhost:5173, click **Create one** to register, and start adding tasks. Vite proxies `/api` to the server, so the browser only ever talks to one origin.
+
+If the server exits with `Missing required environment variables`, `server/.env` is missing or incomplete. If it can't connect to MongoDB, make sure MongoDB is running or check your `MONGODB_URI`.
 
 Check the API is running:
 

@@ -1,5 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
+const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
 const env = require('./config/env');
@@ -19,6 +20,8 @@ if (env.isProduction) {
 
 // Security headers (X-Content-Type-Options, X-Frame-Options, HSTS, ...); also hides X-Powered-By
 app.use(helmet());
+// Only our frontend may call the API from a browser; credentials: true allows the auth cookie
+app.use(cors({ origin: env.CLIENT_URL, credentials: true }));
 app.use(express.json({ limit: '10kb' }));
 app.use(cookieParser());
 app.use(csrfProtection);

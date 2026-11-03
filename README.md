@@ -13,7 +13,7 @@ A multi-user task management app built with the MERN stack. Users register, log 
 - Task ownership enforced on the backend: `userId` always comes from the token, never from the request
 - Request validation with field-level error codes (`express-validator`)
 - Centralised error handling with a consistent response envelope
-- CSRF protection (SameSite cookie + Origin check) and security headers with `helmet`
+- CSRF protection (SameSite cookie + Origin check), CORS limited to the client origin, and security headers with `helmet`
 - Loading, empty and error states, delete confirmation, mobile-friendly layout
 
 ## Tech Stack
@@ -27,7 +27,7 @@ A multi-user task management app built with the MERN stack. Users register, log 
 | Auth           | JSON Web Tokens (`jsonwebtoken`) in HTTP-only cookies |
 | Password hash  | `bcryptjs`                                   |
 | Validation     | `express-validator`                          |
-| Security       | `helmet`, Origin-check CSRF middleware       |
+| Security       | `helmet`, `cors`, Origin-check CSRF middleware |
 
 ## Project Structure
 
@@ -106,7 +106,7 @@ Then open `server/.env` and set at least:
 | `JWT_SECRET`     | Secret used to sign JWTs                            | `your_random_secret`                      |
 | `JWT_EXPIRES_IN` | Token lifetime (the cookie lasts 1 day)             | `1d`                                      |
 | `SALT_ROUNDS`    | bcrypt salt rounds                                  | `10`                                      |
-| `CLIENT_URL`     | Frontend origin allowed by the CSRF check           | `http://localhost:5173`                   |
+| `CLIENT_URL`     | Frontend origin allowed by CORS and the CSRF check  | `http://localhost:5173`                   |
 
 > Generate a strong `JWT_SECRET` with: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
 
@@ -262,7 +262,7 @@ Also out of scope: file attachments, role-based access control, teams, activity 
 
 - **No automated test suite yet.** The API was verified end to end with a scripted curl run against MongoDB (63 checks covering every case in the testing requirements), and the UI was checked manually. With one more day, the first thing I'd add is Jest + Supertest + `mongodb-memory-server` integration tests running in CI.
 - **No rate limiting** on login/register yet (planned with `express-rate-limit`).
-- **No `cors` or request logging (`morgan`) yet.** CORS isn't needed today because the client always calls the API through a same-origin proxy. It becomes necessary if the client ever calls the API host directly.
+- **No request logging (`morgan`) yet.**
 - **Stateless JWT.** Logout clears the cookie, but a token copied before logout stays valid until it expires (1 day). A token denylist or short-lived access + refresh tokens would fix this.
 - With `sortBy=dueDate&order=asc`, tasks without a due date are listed first (MongoDB sorts `null` lowest).
 

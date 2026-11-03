@@ -8,7 +8,6 @@ const ERROR_CODES = {
     minLength: 'TOO_SHORT',
     maxLength: 'TOO_LONG',
     invalidValue: 'INVALID_VALUE',
-    notAllowed: 'FIELD_NOT_ALLOWED',
 };
 
 // Builds an error message object so every rule reports { code, message }.

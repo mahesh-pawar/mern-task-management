@@ -242,12 +242,12 @@ GET /api/tasks?page=1&limit=10&status=todo&priority=high&search=meeting&sortBy=c
 }
 ```
 
-`pending` = status `todo`. `overdue` = not completed and the due date has passed. Everything is computed in a single aggregation over the user's own tasks.
+`pending` = status `todo`. `overdue` = not completed and the due date has passed. The client saves a due date as the end of the chosen day, so a task due today only becomes overdue after today ends. Everything is computed in a single aggregation over the user's own tasks.
 
 ## Key Technical Decisions
 
 1. **Multi-user ownership enforced on the backend.** `requireAuth` puts the id from the verified JWT on `req.userId`. Every task query filters on `{ _id, userId }`, and controllers only pass validated body fields to services (`matchedData`), so a client-supplied `userId` never reaches the database. Another user's task returns `404` rather than `403`, so the API doesn't reveal that the task exists.
-2. **JWT in an HTTP-only cookie, with session restore.** The token is never readable by JavaScript, which reduces the impact of XSS. The cookie is `HttpOnly`, `SameSite=Lax`, `Secure` in production and expires after 1 day. On load, the React `AuthProvider` calls `/api/auth/me`, and protected routes wait for that call before redirecting. The client always calls the API on the same site (Vite proxy in development, a `vercel.json` rewrite in production), so `SameSite=Lax` blocks cross-site requests from carrying the cookie. A second layer, `csrf.middleware.js`, rejects state-changing requests whose `Origin` isn't the client.
+2. **JWT in an HTTP-only cookie, with session restore.** The token is never readable by JavaScript, which reduces the impact of XSS. The cookie is `HttpOnly`, `SameSite=Lax`, `Secure` in production and expires after 1 day. On load, the React `AuthProvider` calls `/api/auth/me`, and protected routes wait for that call before redirecting. The client always calls the API on the same site (Vite proxy in development, a `vercel.json` rewrite in production), so `SameSite=Lax` blocks cross-site requests from carrying the cookie. A second layer, `csrf.middleware.js`, rejects state-changing requests (POST/PUT/PATCH/DELETE) whose `Origin` isn't the client. Requests with no `Origin` header, such as curl or Postman, are allowed: browsers always send `Origin` on these requests, and a non-browser client can't be tricked into sending a user's cookie.
 3. **Server-side filtering, pagination and indexing.** Filters are applied before `skip`/`limit`, and the page and total count run in parallel. Search input is regex-escaped. Indexes match the actual queries: `{ userId, status, createdAt }` for the default list view and status filter, and `{ userId, dueDate }` for due-date sorting and the overdue count. `User.email` has a unique index.
 
 ## Features Intentionally Not Implemented
@@ -260,7 +260,7 @@ Also out of scope: file attachments, role-based access control, teams, activity 
 
 ## Known Limitations
 
-- **No automated test suite yet.** The API was verified end to end with a scripted curl run against MongoDB (63 checks covering every case in the testing requirements), and the UI was checked manually. With one more day, the first thing I'd add is Jest + Supertest + `mongodb-memory-server` integration tests running in CI.
+- **No automated test suite yet.** With one more day, the first thing I'd add is Jest + Supertest + `mongodb-memory-server` integration tests running in CI.
 - **No rate limiting** on login/register yet (planned with `express-rate-limit`).
 - **No request logging (`morgan`) yet.**
 - **Stateless JWT.** Logout clears the cookie, but a token copied before logout stays valid until it expires (1 day). A token denylist or short-lived access + refresh tokens would fix this.
@@ -269,5 +269,5 @@ Also out of scope: file attachments, role-based access control, teams, activity 
 ## Deployment
 
 1. **Database:** create a MongoDB Atlas cluster and copy the connection string.
-2. **API (Render / Railway):** root directory `server`, build `npm install`, start `npm start`. Set the environment variables above with `NODE_ENV=production` and `CLIENT_URL=https://<your-vercel-app>.vercel.app`.
+2. **API (Render / Railway):** root directory `server`, build `npm install`, start `npm start`. Set the environment variables above with `NODE_ENV=production` and `CLIENT_URL=https://<your-vercel-app>.vercel.app`. `NODE_ENV=production` matters: it turns on secure cookies and `trust proxy`, which secure cookies need behind the host's proxy.
 3. **Client (Vercel):** root directory `client`, framework preset Vite. In `client/vercel.json`, replace `YOUR-API-HOST.onrender.com` with your API host. The rewrite keeps `/api` on the same site as the app, so the cookie stays first-party.
